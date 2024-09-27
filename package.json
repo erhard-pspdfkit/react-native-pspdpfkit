@@ -7,14 +7,14 @@
     "pspdfkit",
     "pdf"
   ],
-  "homepage": "https://github.com/Ansifnk/react-native",
+  "homepage": "https://github.com/Ansifnk/react-native-pspdpfkit",
   "bugs": {
     "email": "support@pspdfkit.com"
   },
   "license": "SEE LICENSE IN LICENSE",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Ansifnk/react-native.git"
+    "url": "https://github.com/Ansifnk/react-native-pspdpfkit.git"
   },
   "types": "types/index.d.ts",
   "scripts": {
