@@ -17,7 +17,7 @@ Pod::Spec.new do |s|
   s.homepage          = "https://pspdfkit.com/guides/react-native/"
   s.platform          = :ios, "15.0"
   s.module_name       = "PSPDFKitReactNativeiOS"
-  s.source            = { git: "https://github.com/Ansifnk/react-native" }
+  s.source            = { git: "https://github.com/Ansifnk/react-native-pspdpfkit" }
   s.source_files      = "ios/*.{xcodeproj}", "ios/RCTPSPDFKit/*.{h,m,swift}", "ios/RCTPSPDFKit/Converters/*.{h,m,swift}", "ios/RCTPSPDFKit/Helpers/*.{h,m,swift}"
   s.dependency("React")
   s.dependency("PSPDFKit", "13.9.1")
