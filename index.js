@@ -75,6 +75,7 @@ class PSPDFKitView extends React.Component {
           onDataReturned={this._onDataReturned}
           onCustomToolbarButtonTapped={this._onCustomToolbarButtonTapped}
           onCustomAnnotationContextualMenuItemTapped={this._onCustomAnnotationContextualMenuItemTapped}
+          onDocumentScrolled={this._onDocumentScrolled}
         />
       );
     } else {
@@ -154,6 +155,15 @@ class PSPDFKitView extends React.Component {
     }
   };
 
+   /**
+   * @ignore
+   */
+   _onDocumentScrolled = event => {
+    if (this.props.onDocumentScrolled) {
+      this.props.onDocumentScrolled(event.nativeEvent);
+    }
+  };
+
   /**
    * @ignore
    */
@@ -186,6 +196,35 @@ class PSPDFKitView extends React.Component {
       }
     };
 
+  /**
+   * Enters annotation creation mode, showing the annotation creation toolbar.
+   * @method goToPage
+   * @example
+   * this.pdfRef.current.goToPage(index);
+   * @memberof PSPDFKitView
+   */
+  goToPage=async function (index){
+    if (Platform.OS === 'android') {
+      let requestId = this._nextRequestId++;
+      // return await NativeModules.PSPDFKit.setPageIndex(index,true)
+      UIManager.dispatchViewManagerCommand(
+        findNodeHandle(this._componentRef.current),
+        this._getViewManagerConfig('RCTPSPDFKitView').Commands
+          .setPageIndex,
+        [requestId],
+      );
+      // UIManager.dispatchViewManagerCommand(
+      //   findNodeHandle(this._componentRef.current),
+      //   this._getViewManagerConfig('RCTPSPDFKitView').Commands
+      //     .enterAnnotationCreationMode,
+      //   [],
+      // );
+    } else if (Platform.OS === 'ios') {
+      // return NativeModules.PSPDFKitViewManager.enterAnnotationCreationMode(
+      //   findNodeHandle(this._componentRef.current),
+      // );
+    }
+  }
   /**
    * Enters annotation creation mode, showing the annotation creation toolbar.
    * @method enterAnnotationCreationMode
@@ -275,7 +314,7 @@ class PSPDFKitView extends React.Component {
    * @memberof PSPDFKitView
    * @returns { PDFDocument } A reference to the document that is currently loaded in the PSPDFKitView component.
    */
-  getDocument = function () {
+  getDocument () {
     if (this._pdfDocument == null) {
       this._pdfDocument = new PDFDocument(this._componentRef.current);
       return this._pdfDocument;
@@ -1235,7 +1274,8 @@ if (Platform.OS === 'ios' || Platform.OS === 'android') {
  * @property {function} [onDocumentSaveFailed] Callback that’s called when the document fails to save.
  * @property {function} [onAnnotationTapped] Callback that’s called when an annotation is tapped.
  * @property {function} [onAnnotationsChanged] Callback that’s called when an annotation is added, changed, or removed.
- * @property {function} [onStateChanged] Callback that’s called when the state of the ```PSPDFKitView``` changes.
+ * @property {function} [onDocumentScrolled] Callback that’s called when the document is scrolled. 
+* @property {function} [onStateChanged] Callback that’s called when the state of the ```PSPDFKitView``` changes.
  * @property {function} [onCustomToolbarButtonTapped] Callback that’s called when a custom toolbar button is tapped.
  * @property {function} [onCustomAnnotationContextualMenuItemTapped] Callback that’s called when a custom annotation menu item is tapped.
  * @property {string} [fragmentTag] The tag used to identify a single PdfFragment in the view hierarchy. This needs to be unique in the view hierarchy.
@@ -1470,6 +1510,16 @@ PSPDFKitView.propTypes = {
    *  }}
    */
   onCustomAnnotationContextualMenuItemTapped: PropTypes.func,
+  /**
+   * Callback that’s called when the document is scrolled.
+   * @type {function}
+   * @memberof PSPDFKitView
+   * @example
+   * onDocumentScrolled={result => {
+   *     alert('Scrolling data ' + JSON.stringify(result));
+   *  }}
+   */
+  onDocumentScrolled: PropTypes.func,
   /**
    * The tag used to identify a single ```PdfFragment``` in the view hierarchy.
    * This needs to be unique in the view hierarchy.
