@@ -13,6 +13,7 @@
 
 package com.pspdfkit.views;
 
+import android.annotation.SuppressLint;
 import android.graphics.PointF;
 import android.view.MotionEvent;
 
@@ -30,6 +31,7 @@ import com.pspdfkit.forms.FormListeners;
 import com.pspdfkit.listeners.DocumentListener;
 import com.pspdfkit.listeners.scrolling.DocumentScrollListener;
 import com.pspdfkit.listeners.scrolling.ScrollState;
+import com.pspdfkit.react.NutrientNotificationCenter;
 import com.pspdfkit.react.events.PdfViewAnnotationChangedEvent;
 import com.pspdfkit.react.events.PdfViewAnnotationTappedEvent;
 import com.pspdfkit.react.events.PdfViewDocumentLoadedEvent;
@@ -38,11 +40,13 @@ import com.pspdfkit.react.events.PdfViewDocumentSavedEvent;
 import com.pspdfkit.react.events.PdfViewDocumentScrolledEvent;
 import com.pspdfkit.ui.special_mode.controller.AnnotationSelectionController;
 import com.pspdfkit.ui.special_mode.manager.AnnotationManager;
+import com.pspdfkit.ui.special_mode.manager.FormManager;
 
 import java.util.List;
 import java.util.Map;
 
-class PdfViewDocumentListener implements DocumentListener, AnnotationManager.OnAnnotationSelectedListener, AnnotationProvider.OnAnnotationUpdatedListener, FormListeners.OnFormFieldUpdatedListener, DocumentScrollListener {
+class PdfViewDocumentListener implements DocumentListener, AnnotationManager.OnAnnotationSelectedListener, AnnotationManager.OnAnnotationDeselectedListener, AnnotationProvider.OnAnnotationUpdatedListener, FormListeners.OnFormFieldUpdatedListener, FormManager.OnFormElementSelectedListener, FormManager.OnFormElementDeselectedListener ,DocumentScrollListener{
+
     @NonNull
     private final PdfView parent;
 
@@ -67,12 +71,13 @@ class PdfViewDocumentListener implements DocumentListener, AnnotationManager.OnA
 
     @Override
     public void onDocumentLoaded(@NonNull PdfDocument pdfDocument) {
+        NutrientNotificationCenter.INSTANCE.documentLoaded(pdfDocument.getDocumentIdString());
         eventDispatcher.dispatchEvent(new PdfViewDocumentLoadedEvent(parent.getId()));
     }
 
     @Override
     public void onDocumentLoadFailed(@NonNull Throwable throwable) {
-
+        NutrientNotificationCenter.INSTANCE.documentLoadFailed();
     }
 
     @Override
@@ -98,6 +103,12 @@ class PdfViewDocumentListener implements DocumentListener, AnnotationManager.OnA
     @Override
     public boolean onPageClick(@NonNull PdfDocument pdfDocument, int pageIndex, @Nullable MotionEvent motionEvent, @Nullable PointF pointF, @Nullable Annotation annotation) {
         if (annotation != null) {
+            if (NutrientNotificationCenter.INSTANCE.getIsNotificationCenterInUse()) {
+                parent.getPdfFragment().subscribe(pdfFragment -> {
+                    String documentID = pdfFragment.getDocument().getDocumentIdString();
+                    NutrientNotificationCenter.INSTANCE.didTapAnnotation(annotation, pointF, documentID);
+                });
+            }
             eventDispatcher.dispatchEvent(new PdfViewAnnotationTappedEvent(parent.getId(), annotation));
         }
         return false;
@@ -108,9 +119,16 @@ class PdfViewDocumentListener implements DocumentListener, AnnotationManager.OnA
         return false;
     }
 
+    @SuppressLint("CheckResult")
     @Override
     public void onPageChanged(@NonNull PdfDocument pdfDocument, int pageIndex) {
         parent.updateState(pageIndex);
+        if (NutrientNotificationCenter.INSTANCE.getIsNotificationCenterInUse()) {
+            parent.getPdfFragment().subscribe(pdfFragment -> {
+                String documentID = pdfFragment.getDocument().getDocumentIdString();
+                NutrientNotificationCenter.INSTANCE.documentPageChanged(pageIndex, documentID);
+            });
+        }
     }
 
     @Override
@@ -128,22 +146,50 @@ class PdfViewDocumentListener implements DocumentListener, AnnotationManager.OnA
         return !disableDefaultActionForTappedAnnotations;
     }
 
+    @SuppressLint("CheckResult")
     @Override
     public void onAnnotationSelected(@NonNull Annotation annotation, boolean annotationCreated) {
+        if (NutrientNotificationCenter.INSTANCE.getIsNotificationCenterInUse()) {
+            parent.getPdfFragment().subscribe(pdfFragment -> {
+                String documentID = pdfFragment.getDocument().getDocumentIdString();
+                NutrientNotificationCenter.INSTANCE.didSelectAnnotations(annotation, documentID);
+            });
+        }
     }
 
+    @SuppressLint("CheckResult")
     @Override
     public void onAnnotationCreated(@NonNull Annotation annotation) {
+        if (NutrientNotificationCenter.INSTANCE.getIsNotificationCenterInUse()) {
+            parent.getPdfFragment().subscribe(pdfFragment -> {
+                String documentID = pdfFragment.getDocument().getDocumentIdString();
+                NutrientNotificationCenter.INSTANCE.annotationsChanged("added", annotation, documentID);
+            });
+        }
         eventDispatcher.dispatchEvent(new PdfViewAnnotationChangedEvent(parent.getId(), PdfViewAnnotationChangedEvent.EVENT_TYPE_ADDED, annotation));
     }
 
+    @SuppressLint("CheckResult")
     @Override
     public void onAnnotationUpdated(@NonNull Annotation annotation) {
+        if (NutrientNotificationCenter.INSTANCE.getIsNotificationCenterInUse()) {
+            parent.getPdfFragment().subscribe(pdfFragment -> {
+                String documentID = pdfFragment.getDocument().getDocumentIdString();
+                NutrientNotificationCenter.INSTANCE.annotationsChanged("changed", annotation, documentID);
+            });
+        }
         eventDispatcher.dispatchEvent(new PdfViewAnnotationChangedEvent(parent.getId(), PdfViewAnnotationChangedEvent.EVENT_TYPE_CHANGED, annotation));
     }
 
+    @SuppressLint("CheckResult")
     @Override
     public void onAnnotationRemoved(@NonNull Annotation annotation) {
+        if (NutrientNotificationCenter.INSTANCE.getIsNotificationCenterInUse()) {
+            parent.getPdfFragment().subscribe(pdfFragment -> {
+                String documentID = pdfFragment.getDocument().getDocumentIdString();
+                NutrientNotificationCenter.INSTANCE.annotationsChanged("removed", annotation, documentID);
+            });
+        }
         eventDispatcher.dispatchEvent(new PdfViewAnnotationChangedEvent(parent.getId(), PdfViewAnnotationChangedEvent.EVENT_TYPE_REMOVED, annotation));
     }
 
@@ -152,8 +198,15 @@ class PdfViewDocumentListener implements DocumentListener, AnnotationManager.OnA
         // Not required.
     }
 
+    @SuppressLint("CheckResult")
     @Override
     public void onFormFieldUpdated(@NonNull FormField formField) {
+        if (NutrientNotificationCenter.INSTANCE.getIsNotificationCenterInUse()) {
+            parent.getPdfFragment().subscribe(pdfFragment -> {
+                String documentID = pdfFragment.getDocument().getDocumentIdString();
+                NutrientNotificationCenter.INSTANCE.formFieldValuesUpdated(formField, documentID);
+            });
+        }
         Annotation annotation = formField.getFormElement().getAnnotation();
         if (annotation != null) {
             eventDispatcher.dispatchEvent(new PdfViewAnnotationChangedEvent(parent.getId(), PdfViewAnnotationChangedEvent.EVENT_TYPE_CHANGED, annotation));
@@ -173,5 +226,37 @@ class PdfViewDocumentListener implements DocumentListener, AnnotationManager.OnA
     @Override
     public void onDocumentScrolled(int currX, int currY, int maxX, int maxY, int extendX, int extendY) {
         eventDispatcher.dispatchEvent(new PdfViewDocumentScrolledEvent(parent.getId(), Map.of("currX", currX, "currY", currY, "maxX", maxX, "maxY", maxY, "extendX", extendX, "extendY", extendY)));
+    }
+        @SuppressLint("CheckResult")
+    @Override
+    public void onAnnotationDeselected(@NonNull Annotation annotation, boolean b) {
+        if (NutrientNotificationCenter.INSTANCE.getIsNotificationCenterInUse()) {
+            parent.getPdfFragment().subscribe(pdfFragment -> {
+                String documentID = pdfFragment.getDocument().getDocumentIdString();
+                NutrientNotificationCenter.INSTANCE.didDeselectAnnotations(annotation, documentID);
+            });
+        }
+    }
+
+    @SuppressLint("CheckResult")
+    @Override
+    public void onFormElementSelected(@NonNull FormElement formElement) {
+        if (NutrientNotificationCenter.INSTANCE.getIsNotificationCenterInUse()) {
+            parent.getPdfFragment().subscribe(pdfFragment -> {
+                String documentID = pdfFragment.getDocument().getDocumentIdString();
+                NutrientNotificationCenter.INSTANCE.didSelectFormField(formElement, documentID);
+            });
+        }
+    }
+
+    @SuppressLint("CheckResult")
+    @Override
+    public void onFormElementDeselected(@NonNull FormElement formElement, boolean b) {
+        if (NutrientNotificationCenter.INSTANCE.getIsNotificationCenterInUse()) {
+            parent.getPdfFragment().subscribe(pdfFragment -> {
+                String documentID = pdfFragment.getDocument().getDocumentIdString();
+                NutrientNotificationCenter.INSTANCE.didDeSelectFormField(formElement, documentID);
+            });
+        }
     }
 }
