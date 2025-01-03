@@ -45,7 +45,7 @@ import com.pspdfkit.ui.special_mode.manager.FormManager;
 import java.util.List;
 import java.util.Map;
 
-class PdfViewDocumentListener implements DocumentListener, AnnotationManager.OnAnnotationSelectedListener, AnnotationManager.OnAnnotationDeselectedListener, AnnotationProvider.OnAnnotationUpdatedListener, FormListeners.OnFormFieldUpdatedListener, FormManager.OnFormElementSelectedListener, FormManager.OnFormElementDeselectedListener ,DocumentScrollListener{
+class PdfViewDocumentListener implements DocumentListener, AnnotationManager.OnAnnotationSelectedListener, AnnotationManager.OnAnnotationDeselectedListener, AnnotationProvider.OnAnnotationUpdatedListener, FormListeners.OnFormFieldUpdatedListener, FormManager.OnFormElementSelectedListener, FormManager.OnFormElementDeselectedListener, DocumentScrollListener {
 
     @NonNull
     private final PdfView parent;
@@ -218,16 +218,7 @@ class PdfViewDocumentListener implements DocumentListener, AnnotationManager.OnA
         // Not used.
     }
 
-    @Override
-    public void onScrollStateChanged(@NonNull ScrollState scrollState) {
-
-    }
-
-    @Override
-    public void onDocumentScrolled(int currX, int currY, int maxX, int maxY, int extendX, int extendY) {
-        eventDispatcher.dispatchEvent(new PdfViewDocumentScrolledEvent(parent.getId(), Map.of("currX", currX, "currY", currY, "maxX", maxX, "maxY", maxY, "extendX", extendX, "extendY", extendY)));
-    }
-        @SuppressLint("CheckResult")
+    @SuppressLint("CheckResult")
     @Override
     public void onAnnotationDeselected(@NonNull Annotation annotation, boolean b) {
         if (NutrientNotificationCenter.INSTANCE.getIsNotificationCenterInUse()) {
@@ -258,5 +249,15 @@ class PdfViewDocumentListener implements DocumentListener, AnnotationManager.OnA
                 NutrientNotificationCenter.INSTANCE.didDeSelectFormField(formElement, documentID);
             });
         }
+    }
+
+    @Override
+    public void onScrollStateChanged(@NonNull ScrollState scrollState) {
+
+    }
+
+    @Override
+    public void onDocumentScrolled(int currX, int currY, int maxX, int maxY, int extendX, int extendY) {
+        eventDispatcher.dispatchEvent(new PdfViewDocumentScrolledEvent(parent.getId(), Map.of("currX", currX, "currY", currY, "maxX", maxX, "maxY", maxY, "extendX", extendX, "extendY", extendY)));
     }
 }
